@@ -4,6 +4,10 @@ import * as aws from "@pulumi/aws";
 export const sendMailHandler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const ses = new aws.sdk.SES()
 
+  console.log('Records');
+  console.log(event.Records.length);
+  console.log(event.Records);
+
   const result = await Promise.all(event.Records.map(async message => {
     try {
       // const mailMessage = await ses.sendEmail({
@@ -25,7 +29,7 @@ export const sendMailHandler = async (event: SQSEvent): Promise<SQSBatchResponse
       //   }
       // }).promise()
 
-      console.log(`Message: ${message.body}`);
+      // console.log(`Message: ${message.body}`);
   
       return {
         status: 'sent',

@@ -1,0 +1,6 @@
+{
+  "subject": "Teste de mensagem",
+  "from": "Diego Fernandes <diego@rocketseat.com.br>",
+  "templateFilePath": "messages/tmp/templates/message.html",
+  "recipientListFilePath": "messages/tmp/recipients/recipients.json"
+}

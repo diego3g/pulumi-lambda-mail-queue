@@ -1,18 +1,20 @@
-import { mailBucket } from "./services/mailBucket.s3";
-import { sendMailLambda } from "./services/sendMail.lambda";
-import { sendMailQueue } from "./services/sendMailQueue.sqs";
-import { sliceMessageInBatchesLambda } from "./services/sliceMessageInBatches.lambda";
+import { createMessageLambda } from "./app/lambda/create-message.lambda";
+import { sendMailLambda } from "./app/lambda/sendMail.lambda";
+import { sliceMessageInBatchesLambda } from "./app/lambda/sliceMessageInBatches.lambda";
+import { mailBucket } from "./app/s3/mailBucket.s3";
+import { sendMailQueue } from "./app/sqs/sendMailQueue.sqs";
 
-sendMailQueue.onEvent('mail', sendMailLambda, {
-  maximumBatchingWindowInSeconds: 5,
-});
+// sendMailQueue.onEvent('mail', sendMailLambda, {
+//   maximumBatchingWindowInSeconds: 5,
+// });
 
-mailBucket.onObjectCreated('sliceListInBatches', sliceMessageInBatchesLambda, {
-  filterPrefix: 'messages/',
-  filterSuffix: '.json'
-})
+// mailBucket.onObjectCreated('sliceListInBatches', sliceMessageInBatchesLambda, {
+//   filterPrefix: 'messages/',
+//   filterSuffix: '.json'
+// })
 
 export = {
   sendMailQueueURL: sendMailQueue.id,
   bucketName: mailBucket.id,
+  createMessageLambdaName: createMessageLambda.name,
 }

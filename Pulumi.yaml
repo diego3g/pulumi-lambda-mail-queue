@@ -1,3 +1,3 @@
-name: pulumi-sls-mail-queue
+name: umbriel-sls
 runtime: nodejs
 description: A minimal AWS TypeScript Pulumi program

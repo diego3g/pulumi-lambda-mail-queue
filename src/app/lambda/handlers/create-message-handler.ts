@@ -1,4 +1,5 @@
 import * as aws from '@pulumi/aws'
+import crypto from 'node:crypto';
 
 interface CreateMessageEvent {
   from: string;
@@ -9,28 +10,57 @@ interface CreateMessageEvent {
 
 export const createMessageHandler = async (event: CreateMessageEvent): Promise<any> => {
   const s3 = new aws.sdk.S3()
-  const lambda = new aws.sdk.Lambda()
+  const db = new aws.sdk.DynamoDB()
+  // const lambda = new aws.sdk.Lambda()
 
-  if (!process.env.bucketName) {
+  const { bucketName, messagesTableName } = process.env;
+
+  if (!bucketName) {
     throw new Error('The bucket name was not provided in the environment.');
   }
 
+  if (!messagesTableName) {
+    throw new Error('The messages table name was not provided in the environment.');
+  }
+
   await Promise.all([
-    s3.headObject({
+    s3.getObject({
       Key: event.templateFilePath,
-      Bucket: process.env.bucketName,
+      Bucket: bucketName,
     }).promise(),
-    s3.headObject({
+    s3.getObject({
       Key: event.recipientListFilePath,
-      Bucket: process.env.bucketName,
+      Bucket: bucketName,
     }).promise()
   ])
 
-  // const template = JSON.parse(templateFile.Body?.toString() ?? '{}')
-  // const recipients = JSON.parse(recipientList.Body?.toString() ?? '{}')
+  const messageId = crypto.randomUUID();
 
-  await lambda.invokeAsync({
-    FunctionName: '',
-    InvokeArgs: {},
+  await db.putItem({
+    TableName: messagesTableName,
+    Item: {
+      MessageId: {
+        S: messageId,
+      },
+      Subject: {
+        S: event.subject,
+      }
+    },
+    ReturnValues: "NONE",
   }).promise()
+
+  await Promise.all([
+    s3.copyObject({
+      CopySource: `${bucketName}/${event.templateFilePath}`,
+      Bucket: bucketName,
+      Key: `messages/${messageId}/template.html`, 
+    }).promise(),
+    s3.copyObject({
+      CopySource: `${bucketName}/${event.recipientListFilePath}`,
+      Bucket: bucketName,
+      Key: `messages/${messageId}/recipients.json`, 
+    }).promise()
+  ]);
+
+  return { messageId }
 };

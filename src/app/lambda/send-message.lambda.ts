@@ -1,11 +1,12 @@
 import * as aws from "@pulumi/aws";
 import { createLambdaRole } from "../../util/create-lambda-role";
 import { messagesTable } from "../dynamodb/messages.table";
+import { pendingRecipientsTable } from "../dynamodb/pending-recipiens.table";
 import { mailBucket } from "../s3/mailBucket.s3";
-import { createMessageHandler } from "./handlers/create-message-handler";
+import { sendMessageHandler } from "./handlers/send-message-handler";
 
 const { role, policyAttachment } = createLambdaRole({
-  name: 'create-message',
+  name: 'send-message',
   policyStatements: [
     {
       Effect: "Allow",
@@ -15,25 +16,35 @@ const { role, policyAttachment } = createLambdaRole({
       ],
     },
     {
+      Sid: 'UpdateMessages',
       Effect: "Allow",
       Resource: messagesTable.arn,
       Action: [
-        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+      ],
+    },
+    {
+      Sid: 'WriteRecipients',
+      Effect: "Allow",
+      Resource: pendingRecipientsTable.arn,
+      Action: [
+        "dynamodb:BatchWriteItem",
       ],
     }
   ]
 })
 
-export const createMessageLambda = new aws.lambda.CallbackFunction("create-message", {
+export const sendMessageLambda = new aws.lambda.CallbackFunction("send-message", {
   memorySize: 256,
   timeout: 30,
   runtime: 'nodejs14.x',
-  callback: createMessageHandler,
+  callback: sendMessageHandler,
   role,
   environment: {
     variables: {
       bucketName: mailBucket.id,
       messagesTableName: messagesTable.id,
+      pendingRecipientsTableName: pendingRecipientsTable.id,
     }
   }
 }, {
